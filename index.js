@@ -7,12 +7,13 @@ require('dotenv').config();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors({
-  origin: [
-    "http://localhost:5173"
-  ],
-  credentials: true
-}));
+// app.use(cors({
+//   origin: [
+//     "http://localhost:5173"
+//   ],
+//   credentials: true
+// }));
+app.use(cors());
 app.use(express.json());
 
 
@@ -77,11 +78,11 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/users/admin/:email', verifyToken, verifyAdmin, async(req, res)=>{
+    app.get('/users/admin/:email',  async(req, res)=>{
       const email = req.params.email;
-      if(email !== req.decoded.email){
-        return res.status(403).send({message: 'forbidden access'})
-      }
+      // if(email !== req.decoded.email){
+      //   return res.status(403).send({message: 'forbidden access'})
+      // }
       const query = {email: email};
       const user = await userCollection.findOne(query);
       let admin = false;
@@ -91,7 +92,7 @@ async function run() {
       res.send({admin});
     });
 
-    app.post('/users', verifyToken, verifyAdmin, async(req, res)=>{
+    app.post('/users', async(req, res)=>{
       const user = req.body;
       const query = {email: user?.email}
       const existingUser = await userCollection.findOne(query);
@@ -153,16 +154,34 @@ async function run() {
       res.send(result);
     });
 
-    app.post('/survey', verifyToken, verifyAdmin, async(req, res)=>{
+    app.post('/survey',verifyToken, async(req, res)=>{
       const category = req.body;
       const result = await SurveyCollection.insertOne(category);
       res.send(result);
     });
 
+    app.patch('/survey/:id', async(req, res)=>{
+      const category = req.body;
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updateDoc = {
+        $set: {
+          title: category.title,
+          voted: category.voted,
+          description: category.description,
+          Add_vote: category.Add_vote,
+          Add_vote2: category.Add_vote2,
+          image: category.image
+        }
+      };
+      const result = await SurveyCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    })
+
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
